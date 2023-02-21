@@ -1,14 +1,15 @@
-FROM debian:stretch
+FROM ubuntu:latest AS builder
 
-MAINTAINER David Stefan <stefda@gmail.com>
+MAINTAINER Valerii Sverchkov <valerysverchkov@gmail.com>
 
-ENV OSMIUM_VERSION 2.13.1
-ENV OSMIUM_TOOL_VERSION 1.7.1
+ENV OSMIUM_VERSION 2.19.0
+ENV OSMIUM_TOOL_VERSION 1.15.0
 
-RUN apt-get update
+RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
+
 RUN apt-get update && apt-get install -y \
     wget g++ cmake cmake-curses-gui make libexpat1-dev zlib1g-dev libbz2-dev libsparsehash-dev \
-    libboost-program-options-dev libboost-dev libgdal-dev libproj-dev doxygen graphviz pandoc
+    libboost-program-options-dev libboost-dev libgdal-dev libproj-dev doxygen graphviz pandoc libprotozero-dev liblz4-dev
 
 RUN mkdir /var/install
 WORKDIR /var/install
@@ -33,4 +34,8 @@ RUN cd osmium-tool && \
     cmake -DOSMIUM_INCLUDE_DIR=/var/install/libosmium/include/ .. && \
     make
 
-RUN mv /var/install/osmium-tool/build/src/osmium /usr/bin/osmium
+FROM ubuntu:latest
+
+RUN apt-get update && apt-get install -y libboost-program-options-dev libexpat1-dev
+
+COPY --from=builder /var/install/osmium-tool/build/src/osmium /usr/bin/osmium
